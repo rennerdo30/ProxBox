@@ -2,67 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens.
+ *
+ * Every colour is stored as bare HSL channels so Tailwind can compose them with
+ * an alpha value (`bg-primary/10`). Both themes define the same token set, so a
+ * component never needs a `dark:` variant just to pick a colour.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 221 83% 45%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 214 32% 93%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 19% 38%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 214 32% 93%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 44%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --success: 142 72% 29%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --warning: 32 90% 34%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 217 85% 42%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 25% 88%;
+    --input: 214 25% 84%;
+    --ring: 221 83% 45%;
+
+    --radius: 0.625rem;
+
+    color-scheme: light;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    /* Cards sit above the page, so they are a step lighter than the canvas. */
+    --card: 222 40% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 40% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 30% 20%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 30% 18%;
+    --muted-foreground: 215 22% 68%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217 30% 22%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 222 47% 11%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --success: 142 65% 55%;
+    --success-foreground: 222 47% 11%;
+
+    --warning: 38 92% 60%;
+    --warning-foreground: 222 47% 11%;
+
+    --info: 213 94% 68%;
+    --info-foreground: 222 47% 11%;
+
+    --border: 217 28% 22%;
+    --input: 217 28% 26%;
+    --ring: 213 94% 68%;
+
+    color-scheme: dark;
   }
 }
 
@@ -70,76 +100,215 @@
   * {
     @apply border-border;
   }
+
+  html {
+    @apply antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
+
+  /* One consistent focus ring for everything keyboard reachable. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
 }
 
-.btn {
-  @apply inline-flex items-center justify-center rounded-md font-medium transition-colors 
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none 
-    disabled:opacity-50 h-10 px-4 py-2;
+@layer components {
+  /* --- Layout helpers ------------------------------------------------- */
+
+  .skip-link {
+    @apply sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4
+      focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-primary focus-visible:px-4
+      focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium
+      focus-visible:text-primary-foreground;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold tracking-tight sm:text-xl;
+  }
+
+  /* --- Buttons -------------------------------------------------------- */
+
+  .btn {
+    @apply inline-flex min-h-[2.5rem] select-none items-center justify-center gap-2 whitespace-nowrap
+      rounded-md px-4 text-sm font-medium leading-none
+      transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out
+      active:translate-y-px disabled:pointer-events-none disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/70;
+  }
+
+  .btn-outline {
+    @apply border border-input bg-transparent hover:border-primary/40 hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90;
+  }
+
+  .btn-sm {
+    @apply min-h-[2rem] px-3 text-xs;
+  }
+
+  .btn-icon {
+    @apply w-10 px-0;
+  }
+
+  /* --- Forms ---------------------------------------------------------- */
+
+  .input {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
+      transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground
+      hover:border-primary/40 focus-visible:border-primary aria-[invalid=true]:border-destructive
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .label {
+    @apply block text-sm font-medium leading-none text-foreground peer-disabled:cursor-not-allowed
+      peer-disabled:opacity-70;
+  }
+
+  .field {
+    @apply space-y-2;
+  }
+
+  .field-hint {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .link {
+    @apply rounded-sm font-medium text-primary underline-offset-4 hover:underline;
+  }
+
+  /* --- Surfaces ------------------------------------------------------- */
+
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+
+  .card-interactive {
+    @apply card transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out
+      hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md;
+  }
+
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-5 sm:p-6;
+  }
+
+  .card-title {
+    @apply text-lg font-semibold leading-tight tracking-tight;
+  }
+
+  .card-content {
+    @apply p-5 pt-0 sm:p-6 sm:pt-0;
+  }
+
+  .card-footer {
+    @apply flex items-center p-5 pt-0 sm:p-6 sm:pt-0;
+  }
+
+  /* --- Badges --------------------------------------------------------- */
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-0.5
+      text-xs font-semibold capitalize transition-colors;
+  }
+
+  .badge-success {
+    @apply border-success/20 bg-success/10 text-success;
+  }
+
+  .badge-error {
+    @apply border-destructive/20 bg-destructive/10 text-destructive;
+  }
+
+  .badge-warning {
+    @apply border-warning/20 bg-warning/10 text-warning;
+  }
+
+  .badge-info {
+    @apply border-info/20 bg-info/10 text-info;
+  }
+
+  .badge-secondary {
+    @apply border-border bg-secondary text-secondary-foreground;
+  }
+
+  /* --- Feedback ------------------------------------------------------- */
+
+  .alert {
+    @apply flex items-start gap-3 rounded-md border p-3 text-sm;
+  }
+
+  .alert-error {
+    @apply border-destructive/30 bg-destructive/10 text-destructive;
+  }
+
+  .alert-success {
+    @apply border-success/30 bg-success/10 text-success;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+
+  .spinner {
+    @apply inline-block shrink-0 rounded-full border-2 border-current border-t-transparent;
+    animation: spinner-spin 0.7s linear infinite;
+  }
+
+  .meter-track {
+    @apply h-2 w-full overflow-hidden rounded-full bg-secondary;
+  }
+
+  .meter-bar {
+    @apply h-full rounded-full bg-primary transition-[width] duration-500 ease-out;
+  }
 }
 
-.btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+@keyframes spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.btn-secondary {
-  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
-}
+/*
+ * Respect the OS "reduce motion" preference: drop transitions and movement, but
+ * keep the busy spinner turning (slowly) so loading states stay legible.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 
-.btn-destructive {
-  @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
-}
+  .card-interactive:hover,
+  .btn:active {
+    transform: none;
+  }
 
-.input {
-  @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm 
-    ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium 
-    placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 
-    focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-}
-
-.label {
-  @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
-}
-
-.card {
-  @apply rounded-lg border bg-card text-card-foreground shadow-sm;
-}
-
-.card-header {
-  @apply flex flex-col space-y-1.5 p-6;
-}
-
-.card-title {
-  @apply text-2xl font-semibold leading-none tracking-tight;
-}
-
-.card-content {
-  @apply p-6 pt-0;
-}
-
-.card-footer {
-  @apply flex items-center p-6 pt-0;
-}
-
-.badge {
-  @apply inline-flex items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
-}
-
-.badge-success {
-  @apply bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800/30 dark:text-green-400;
-}
-
-.badge-error {
-  @apply bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800/30 dark:text-red-400;
-}
-
-.badge-warning {
-  @apply bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-800/30 dark:text-yellow-400;
-}
-
-.badge-info {
-  @apply bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-800/30 dark:text-blue-400;
+  .spinner {
+    animation: spinner-spin 1.6s linear infinite !important;
+  }
 }

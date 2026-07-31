@@ -1,7 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  FiArrowRight,
+  FiCpu,
+  FiHardDrive,
+  FiLayers,
+  FiPlus,
+  FiRefreshCw,
+  FiServer,
+  FiSettings,
+  FiUsers,
+} from 'react-icons/fi'
+import { IconType } from 'react-icons'
 import { api } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+import { RECENT_VM_LIMIT } from '../lib/constants'
+import Alert from '../components/Alert'
+import UsageMeter from '../components/UsageMeter'
 
 interface VM {
   id: number
@@ -16,6 +31,57 @@ interface ClusterUsage {
   disk_usage: number
 }
 
+interface QuickLink {
+  to: string
+  title: string
+  description: string
+  icon: IconType
+}
+
+const ADMIN_QUICK_LINKS: QuickLink[] = [
+  {
+    to: '/admin/templates',
+    title: 'Manage templates',
+    description: 'Configure the VM templates users can clone',
+    icon: FiLayers,
+  },
+  {
+    to: '/admin/users',
+    title: 'Manage users',
+    description: 'Review accounts, roles and access',
+    icon: FiUsers,
+  },
+  {
+    to: '/admin',
+    title: 'Admin dashboard',
+    description: 'Full system overview',
+    icon: FiSettings,
+  },
+]
+
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  running: 'badge-success',
+  stopped: 'badge-info',
+  failed: 'badge-error',
+  pending: 'badge-warning',
+}
+
+/** Formats with the browser locale rather than a hardcoded one. */
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+})
+
+function formatDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+}
+
+function statusBadgeClass(status: string) {
+  return STATUS_BADGE_CLASSES[status.toLowerCase()] ?? 'badge-secondary'
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [recentVMs, setRecentVMs] = useState<VM[]>([])
@@ -23,165 +89,159 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      setError('')
-      
-      try {
-        // Fetch recent VMs
-        const vmsResponse = await api.get('/api/vms', {
-          params: { limit: 5 },
-        })
-        setRecentVMs(vmsResponse.data)
-        
-        // Fetch cluster usage
-        const usageResponse = await api.get('/api/proxmox/usage')
-        setClusterUsage(usageResponse.data)
-      } catch (err: any) {
-        console.error(err)
-        setError('Failed to load dashboard data')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const vmsResponse = await api.get('/api/vms', {
+        params: { limit: RECENT_VM_LIMIT },
+      })
+      setRecentVMs(vmsResponse.data)
+
+      const usageResponse = await api.get('/api/proxmox/usage')
+      setClusterUsage(usageResponse.data)
+    } catch (err: any) {
+      console.error(err)
+      setError('Could not load the dashboard data.')
+    } finally {
+      setIsLoading(false)
     }
-    
-    fetchData()
   }, [])
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'running':
-        return 'badge-success'
-      case 'stopped':
-        return 'badge-info'
-      case 'failed':
-        return 'badge-error'
-      case 'pending':
-        return 'badge-warning'
-      default:
-        return 'badge-secondary'
-    }
-  }
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="page-title">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            {user?.first_name ? `Welcome back, ${user.first_name}.` : 'Welcome back.'} Here is the
+            current state of your cluster.
+          </p>
+        </div>
         <Link to="/vms/create" className="btn btn-primary">
+          <FiPlus className="h-4 w-4" aria-hidden="true" />
           Create VM
         </Link>
       </div>
-      
+
       {error && (
-        <div className="p-3 rounded-md bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-          {error}
-        </div>
+        <Alert>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <button type="button" onClick={fetchData} className="btn btn-outline btn-sm">
+              <FiRefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              Try again
+            </button>
+          </div>
+        </Alert>
       )}
-      
+
       {isLoading ? (
-        <div className="flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <div className="space-y-8" aria-busy="true">
+          <span className="sr-only" role="status">
+            Loading dashboard
+          </span>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((index) => (
+              <div key={index} className="card space-y-3 p-4 sm:p-5">
+                <div className="skeleton h-5 w-24" />
+                <div className="skeleton h-2 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            <div className="skeleton h-6 w-56" />
+            <div className="skeleton h-40 w-full" />
+          </div>
         </div>
       ) : (
         <>
-          {/* Cluster Usage */}
           {clusterUsage && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="card p-4">
-                <div className="flex flex-col">
-                  <span className="text-lg font-semibold">CPU Usage</span>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${clusterUsage.cpu_usage * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="mt-1 text-sm text-muted-foreground">
-                    {Math.round(clusterUsage.cpu_usage * 100)}%
-                  </span>
-                </div>
+            <section className="space-y-4" aria-labelledby="cluster-usage-heading">
+              <h2 id="cluster-usage-heading" className="section-title">
+                Cluster utilisation
+              </h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <UsageMeter label="CPU" ratio={clusterUsage.cpu_usage} icon={FiCpu} />
+                <UsageMeter label="Memory" ratio={clusterUsage.memory_usage} icon={FiServer} />
+                <UsageMeter label="Disk" ratio={clusterUsage.disk_usage} icon={FiHardDrive} />
               </div>
-              
-              <div className="card p-4">
-                <div className="flex flex-col">
-                  <span className="text-lg font-semibold">Memory Usage</span>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${clusterUsage.memory_usage * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="mt-1 text-sm text-muted-foreground">
-                    {Math.round(clusterUsage.memory_usage * 100)}%
-                  </span>
-                </div>
-              </div>
-              
-              <div className="card p-4">
-                <div className="flex flex-col">
-                  <span className="text-lg font-semibold">Disk Usage</span>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${clusterUsage.disk_usage * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="mt-1 text-sm text-muted-foreground">
-                    {Math.round(clusterUsage.disk_usage * 100)}%
-                  </span>
-                </div>
-              </div>
-            </div>
+            </section>
           )}
-          
-          {/* Recent VMs */}
-          <div>
-            <h2 className="text-xl font-semibold">Recent Virtual Machines</h2>
-            <div className="mt-4 overflow-hidden rounded-lg border">
-              {recentVMs.length === 0 ? (
-                <div className="flex items-center justify-center p-4 text-muted-foreground">
-                  No virtual machines found
+
+          <section className="space-y-4" aria-labelledby="recent-vms-heading">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="recent-vms-heading" className="section-title">
+                Recent virtual machines
+              </h2>
+              <Link to="/vms" className="link inline-flex items-center gap-1.5 text-sm">
+                View all
+                <FiArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+
+            {recentVMs.length === 0 ? (
+              <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <FiServer className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div className="space-y-1">
+                  <p className="font-medium">No virtual machines yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Spin one up from a template — it is discarded again when you are done.
+                  </p>
                 </div>
-              ) : (
+                <Link to="/vms/create" className="btn btn-primary btn-sm">
+                  <FiPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                  Create your first VM
+                </Link>
+              </div>
+            ) : (
+              <div className="card overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b bg-muted">
-                        <th className="px-4 py-3 text-sm font-medium">Name</th>
-                        <th className="px-4 py-3 text-sm font-medium">Status</th>
-                        <th className="px-4 py-3 text-sm font-medium">Created</th>
-                        <th className="px-4 py-3 text-sm font-medium">Actions</th>
+                  <table className="w-full text-left text-sm">
+                    <caption className="sr-only">
+                      The most recently created virtual machines
+                    </caption>
+                    <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th scope="col" className="px-4 py-3 font-medium">
+                          Name
+                        </th>
+                        <th scope="col" className="px-4 py-3 font-medium">
+                          Status
+                        </th>
+                        <th scope="col" className="px-4 py-3 font-medium">
+                          Created
+                        </th>
+                        <th scope="col" className="px-4 py-3 text-right font-medium">
+                          <span className="sr-only">Actions</span>
+                        </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border">
                       {recentVMs.map((vm) => (
-                        <tr key={vm.id} className="border-b">
-                          <td className="px-4 py-3">{vm.name}</td>
+                        <tr key={vm.id} className="transition-colors hover:bg-muted/40">
+                          <th scope="row" className="px-4 py-3 font-medium">
+                            {vm.name}
+                          </th>
                           <td className="px-4 py-3">
-                            <span
-                              className={`badge ${getStatusBadgeClass(vm.status)}`}
-                            >
+                            <span className={`badge ${statusBadgeClass(vm.status)}`}>
                               {vm.status}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                          <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                             {formatDate(vm.created_at)}
                           </td>
-                          <td className="px-4 py-3">
-                            <Link
-                              to={`/vms/${vm.id}`}
-                              className="text-sm text-primary hover:underline"
-                            >
+                          <td className="px-4 py-3 text-right">
+                            <Link to={`/vms/${vm.id}`} className="link">
                               View
+                              <span className="sr-only"> {vm.name}</span>
                             </Link>
                           </td>
                         </tr>
@@ -189,113 +249,35 @@ export default function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-            
-            <div className="mt-4 text-right">
-              <Link
-                to="/vms"
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                View all VMs
-              </Link>
-            </div>
-          </div>
-          
-          {/* Admin quick links */}
-          {user?.role === 'admin' && (
-            <div>
-              <h2 className="text-xl font-semibold">Admin Quick Links</h2>
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Link
-                  to="/admin/templates"
-                  className="card p-4 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
-                      >
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Manage Templates</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Configure VM templates
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-                
-                <Link
-                  to="/admin/users"
-                  className="card p-4 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Manage Users</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Configure user accounts
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-                
-                <Link
-                  to="/admin"
-                  className="card p-4 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
-                      >
-                        <path d="M12 20h9"></path>
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Admin Dashboard</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Full system overview
-                      </p>
-                    </div>
-                  </div>
-                </Link>
               </div>
-            </div>
+            )}
+          </section>
+
+          {user?.role === 'admin' && (
+            <section className="space-y-4" aria-labelledby="admin-links-heading">
+              <h2 id="admin-links-heading" className="section-title">
+                Administration
+              </h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {ADMIN_QUICK_LINKS.map(({ to, title, description, icon: Icon }) => (
+                  <Link key={title} to={to} className="card-interactive group p-4 sm:p-5">
+                    <div className="flex items-center gap-4">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="font-medium">{title}</h3>
+                        <p className="text-sm text-muted-foreground">{description}</p>
+                      </div>
+                      <FiArrowRight
+                        className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
         </>
       )}

@@ -6,8 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ProxBox - Discardable VM Management</title>
     <meta name="description" content="A modern web application for creating and managing discardable virtual machines on Proxmox VE" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f9fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+    <script>
+      // Apply the stored theme before first paint so the page never flashes the
+      // wrong colours. Source of truth for the key: src/lib/constants.ts
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('proxbox:theme')
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (error) {
+          /* Storage can be unavailable; the app applies the theme on mount. */
+        }
+      })()
+    </script>
   </head>
-  <body class="bg-gray-100 dark:bg-gray-900">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

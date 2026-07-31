@@ -1,97 +1,124 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { FiEye, FiEyeOff } from 'react-icons/fi'
 import { useAuth } from '../hooks/useAuth'
+import { APP_NAME } from '../lib/constants'
+import Alert from '../components/Alert'
+import AuthLayout from '../components/AuthLayout'
+
+interface LoginLocationState {
+  message?: string
+}
 
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const { login } = useAuth()
   const navigate = useNavigate()
-  
+  const location = useLocation()
+
+  // Set by the register page after a successful sign-up.
+  const flashMessage = (location.state as LoginLocationState | null)?.message
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
-    
+
     try {
       await login(username, password)
       navigate('/')
     } catch (err: any) {
       console.error(err)
-      setError(err.response?.data?.detail || 'Failed to login')
+      setError(err.response?.data?.detail || 'Failed to log in. Check your username and password.')
     } finally {
       setIsLoading(false)
     }
   }
-  
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Login to ProxBox</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter your credentials to access your account
-          </p>
+    <AuthLayout
+      title={`Sign in to ${APP_NAME}`}
+      description="Enter your credentials to manage your virtual machines."
+      footer={
+        <p className="text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="link">
+            Create one
+          </Link>
+        </p>
+      }
+    >
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        {flashMessage && <Alert variant="success">{flashMessage}</Alert>}
+        {error && <Alert>{error}</Alert>}
+
+        <div className="field">
+          <label htmlFor="username" className="label">
+            Username
+          </label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            className="input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoFocus
+            required
+            aria-invalid={Boolean(error)}
+          />
         </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-            {error}
-          </div>
-        )}
-        
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <label htmlFor="username" className="label">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              className="input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="label">
-                Password
-              </label>
-            </div>
+
+        <div className="field">
+          <label htmlFor="password" className="label">
+            Password
+          </label>
+          <div className="relative">
             <input
               id="password"
-              type="password"
-              className="input"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              className="input pr-11"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
+              aria-invalid={Boolean(error)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? (
+                <FiEyeOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <FiEye className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
           </div>
-          
-          <button
-            type="submit"
-            className="btn btn-primary w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-        <div className="mt-6 text-center text-sm">
-          <p>
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline">
-              Register
-            </Link>
-          </p>
         </div>
-      </div>
-    </div>
+
+        <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <span className="spinner h-4 w-4" aria-hidden="true" />
+              Signing in
+            </>
+          ) : (
+            'Sign in'
+          )}
+        </button>
+      </form>
+    </AuthLayout>
   )
 }
