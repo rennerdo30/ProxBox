@@ -101,7 +101,7 @@ export default function Dashboard() {
 
       const usageResponse = await api.get('/api/proxmox/usage')
       setClusterUsage(usageResponse.data)
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
       setError('Could not load the dashboard data.')
     } finally {

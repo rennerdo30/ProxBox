@@ -16,10 +16,9 @@ Early work in progress, built for a home lab. What exists today:
   `me`), VM create, list, read, update, delete, start, stop, graceful shutdown, VNC
   console ticket, VM sharing between users, template CRUD, user administration, and
   Proxmox cluster usage/node/capacity queries.
-- **Frontend:** login, registration and the dashboard are implemented. The remaining
-  routes referenced by the router (VM list, VM create/detail/console, and the admin
-  pages) are **not written yet**, so a production `npm run build` of the frontend fails
-  until they exist. `npm run lint` also still needs an ESLint config file.
+- **Frontend:** login, registration, dashboard, VM list/create/detail and console
+  connection, plus admin template and user management pages. The console provides
+  a connection for an installed VNC client. Production build and ESLint are configured.
 - **Not implemented:** no background job discards expired VMs yet — `discard_type` and
   `discard_at` are stored and returned by the API, but nothing reaps them on a schedule.
   LDAP and GitLab OAuth exist as configuration settings only; the only working login is

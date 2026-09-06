@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
@@ -32,9 +33,13 @@ export default function Login() {
     try {
       await login(username, password)
       navigate('/')
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      setError(err.response?.data?.detail || 'Failed to log in. Check your username and password.')
+      setError(
+        (isAxiosError(err) && typeof err.response?.data?.detail === 'string'
+          ? err.response.data.detail
+          : '') || 'Failed to log in. Check your username and password.',
+      )
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +113,11 @@ export default function Login() {
           </div>
         </div>
 
-        <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={isLoading}
+        >
           {isLoading ? (
             <>
               <span className="spinner h-4 w-4" aria-hidden="true" />

@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -20,7 +21,8 @@ export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  const passwordMismatch = passwordConfirm.length > 0 && password !== passwordConfirm
+  const passwordMismatch =
+    passwordConfirm.length > 0 && password !== passwordConfirm
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +34,9 @@ export default function Register() {
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Your password must be at least ${MIN_PASSWORD_LENGTH} characters long.`)
+      setError(
+        `Your password must be at least ${MIN_PASSWORD_LENGTH} characters long.`,
+      )
       return
     }
 
@@ -50,9 +54,13 @@ export default function Register() {
       navigate('/login', {
         state: { message: 'Your account was created. You can sign in now.' },
       })
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      setError(err.response?.data?.detail || 'Failed to create the account. Please try again.')
+      setError(
+        (isAxiosError(err) && typeof err.response?.data?.detail === 'string'
+          ? err.response.data.detail
+          : '') || 'Failed to create the account. Please try again.',
+      )
     } finally {
       setIsLoading(false)
     }
@@ -77,7 +85,8 @@ export default function Register() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="field">
             <label htmlFor="firstName" className="label">
-              First name <span className="text-muted-foreground">(optional)</span>
+              First name{' '}
+              <span className="text-muted-foreground">(optional)</span>
             </label>
             <input
               id="firstName"
@@ -92,7 +101,8 @@ export default function Register() {
 
           <div className="field">
             <label htmlFor="lastName" className="label">
-              Last name <span className="text-muted-foreground">(optional)</span>
+              Last name{' '}
+              <span className="text-muted-foreground">(optional)</span>
             </label>
             <input
               id="lastName"
@@ -174,17 +184,26 @@ export default function Register() {
             onChange={(e) => setPasswordConfirm(e.target.value)}
             autoComplete="new-password"
             aria-invalid={passwordMismatch}
-            aria-describedby={passwordMismatch ? 'password-confirm-error' : undefined}
+            aria-describedby={
+              passwordMismatch ? 'password-confirm-error' : undefined
+            }
             required
           />
           {passwordMismatch && (
-            <p id="password-confirm-error" className="text-xs font-medium text-destructive">
+            <p
+              id="password-confirm-error"
+              className="text-xs font-medium text-destructive"
+            >
               The two passwords do not match.
             </p>
           )}
         </div>
 
-        <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={isLoading}
+        >
           {isLoading ? (
             <>
               <span className="spinner h-4 w-4" aria-hidden="true" />
