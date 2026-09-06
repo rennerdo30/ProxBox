@@ -40,7 +40,10 @@ class Settings(BaseSettings):
     PROXMOX_USER: str
     PROXMOX_TOKEN_NAME: str
     PROXMOX_TOKEN_VALUE: str
-    PROXMOX_VERIFY_SSL: bool = False
+    # Secure by default: TLS certificates presented by the Proxmox API are
+    # verified unless PROXMOX_VERIFY_SSL is explicitly set to false. Turning it
+    # off exposes the API token to interception - see the README.
+    PROXMOX_VERIFY_SSL: bool = True
 
     # LDAP settings
     LDAP_ENABLED: bool = False
