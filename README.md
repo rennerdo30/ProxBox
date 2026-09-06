@@ -72,25 +72,6 @@ For the production images (multi-stage frontend build behind nginx):
 docker compose up -d --build
 ```
 
-## Configuration
-
-All settings come from the `.env` file that both Compose files read. Copy `.env.example` as a
-starting point.
-
-| Variable                                                        | Purpose                                              |
-| --------------------------------------------------------------- | ---------------------------------------------------- |
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT`        | PostgreSQL connection                                |
-| `PROXMOX_HOST`                                                   | Proxmox API base URL, e.g. `https://pve.example:8006` |
-| `PROXMOX_USER`, `PROXMOX_TOKEN_NAME`, `PROXMOX_TOKEN_VALUE`      | Proxmox API token credentials                        |
-| `PROXMOX_VERIFY_SSL`                                             | Verify the Proxmox certificate (`true` in production) |
-| `SECRET_KEY`                                                     | JWT signing key — generate your own                  |
-| `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS`       | Token lifetimes                                      |
-| `LDAP_*`, `OAUTH_*`, `GITLAB_*`                                  | Reserved for the not-yet-implemented login providers |
-| `VITE_API_URL`                                                   | API base URL baked into the frontend build           |
-
-The `SECRET_KEY` and passwords in `.env.example` are throwaway development values. Replace
-them before exposing ProxBox to anything but your own machine.
-
 ## Repository layout
 
 ```
@@ -129,6 +110,8 @@ Settings groups:
 - Authentication settings (`SECRET_KEY`, `ALGORITHM`, token lifetimes, `LDAP_*`,
   `OAUTH_*` / `GITLAB_*`)
 - Frontend settings (`VITE_API_URL`, `NODE_ENV`)
+
+LDAP and OAuth settings are reserved for login providers that are not yet implemented.
 
 ### Generating `SECRET_KEY`
 
