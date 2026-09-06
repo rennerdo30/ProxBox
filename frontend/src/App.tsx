@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/admin/Dashboard'
 import Layout from './components/Layout'
+import Spinner from './components/Spinner'
 import VirtualMachines from './pages/VirtualMachines'
 import CreateVM from './pages/CreateVM'
 import ViewVM from './pages/ViewVM'
@@ -19,8 +20,11 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <Spinner className="h-10 w-10 border-[3px]" label="Loading your session" />
+        <p aria-hidden="true" className="text-sm text-muted-foreground">
+          Loading your session…
+        </p>
       </div>
     )
   }

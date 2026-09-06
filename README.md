@@ -1,45 +1,94 @@
-# ProxBox - Discardable VM Management for Proxmox
+# ProxBox — discardable VM management for Proxmox VE
 
-ProxBox is a modern web application that provides an intuitive interface for creating and managing discardable virtual machines on Proxmox VE.
+ProxBox is a self-hosted web app for handing out *throwaway* virtual machines on a
+Proxmox VE cluster. A user picks a template, gets a VM, and the VM is meant to go away
+again — after a timer or once it is shut down — instead of quietly living on the cluster
+forever.
 
-## Features
+It is a FastAPI backend plus a React/TypeScript frontend, wired together with Docker
+Compose and PostgreSQL.
 
-- Create temporary VMs from Proxmox templates
-- Set VM expiration by timer or on shutdown
-- Template management and access control
-- User permissions system with admin capabilities
-- Proxmox resource utilization monitoring
-- Direct VNC console access
-- VM sharing between users
-- LDAP and GitLab OAuth authentication
+## Project status
 
-## Architecture
+Early work in progress, built for a home lab. What exists today:
 
-- **Backend**: FastAPI with Pydantic models
-- **Frontend**: React with TypeScript
-- **Database**: PostgreSQL
-- **Deployment**: Docker and Docker Compose
-- **Authentication**: LDAP, GitLab OAuth, and local accounts
+- **Backend:** the REST API is largely in place — auth (register / login / JWT refresh /
+  `me`), VM create, list, read, update, delete, start, stop, graceful shutdown, VNC
+  console ticket, VM sharing between users, template CRUD, user administration, and
+  Proxmox cluster usage/node/capacity queries.
+- **Frontend:** login, registration, dashboard, VM list/create/detail and console
+  connection, plus admin template and user management pages. The console provides
+  a connection for an installed VNC client. Production build and ESLint are configured.
+- **Not implemented:** no background job discards expired VMs yet — `discard_type` and
+  `discard_at` are stored and returned by the API, but nothing reaps them on a schedule.
+  LDAP and GitLab OAuth exist as configuration settings only; the only working login is
+  a local account.
+- **Migrations:** `backend/migrations/versions/` is empty, so the first schema revision
+  still has to be generated.
 
-## Deployment
+## Tech stack
+
+| Layer    | Choice                                                             |
+| -------- | ------------------------------------------------------------------ |
+| Backend  | FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic, proxmoxer      |
+| Database | PostgreSQL 14                                                      |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query |
+| Auth     | JWT access + refresh tokens (python-jose, bcrypt)                  |
+| Runtime  | Docker Compose; frontend served by nginx in the production image   |
+
+## Getting started
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- Proxmox VE instance with API access
+- A Proxmox VE instance with an API token, and at least one VM template to clone
 
-### Setup
+### Run it
 
-1. Clone this repository
-2. Create your local configuration from the template:
+```bash
+git clone https://github.com/rennerdo30/ProxBox.git
+cd ProxBox
 
-   ```bash
-   cp .env.example .env
-   ```
+# .env.example is a template - copy it and fill in your own values
+cp .env.example .env
 
-3. Edit `.env` and replace every `CHANGE_ME_...` placeholder with a real value
-4. Run `docker-compose up -d`
-5. Access the application at http://localhost:8000
+# Development: hot-reloading backend + Vite dev server
+docker compose -f docker-compose.dev.yml up -d
+
+# Apply database migrations (once revisions exist)
+docker compose exec backend alembic upgrade head
+```
+
+| Service            | URL                            |
+| ------------------ | ------------------------------ |
+| Frontend           | http://localhost:3000          |
+| API                | http://localhost:8000/api      |
+| Interactive API docs | http://localhost:8000/docs   |
+
+For the production images (multi-stage frontend build behind nginx):
+
+```bash
+docker compose up -d --build
+```
+
+## Repository layout
+
+```
+backend/
+  app/main.py        FastAPI entry point, CORS, /api router
+  app/api/v1/        auth, users, vms, templates, proxmox endpoints
+  app/models/        SQLAlchemy models (User, VM, VMTemplate)
+  app/schemas/       Pydantic request/response models
+  app/services/      Proxmox client and user/auth logic
+  app/core/config.py settings loaded from .env
+  migrations/        Alembic environment
+frontend/
+  src/pages/         route components
+  src/components/    shared UI (layout, alerts, meters, theme toggle)
+  src/contexts/      auth and theme providers
+  src/lib/           UI constants and class-name helper
+  src/index.css      design tokens (light + dark) and component classes
+```
 
 ## Configuration
 
@@ -60,6 +109,8 @@ Settings groups:
 - Authentication settings (`SECRET_KEY`, `ALGORITHM`, token lifetimes, `LDAP_*`,
   `OAUTH_*` / `GITLAB_*`)
 - Frontend settings (`VITE_API_URL`, `NODE_ENV`)
+
+LDAP and OAuth settings are reserved for login providers that are not yet implemented.
 
 ### Generating `SECRET_KEY`
 
@@ -131,18 +182,25 @@ git check-ignore -v .env  # should report the .gitignore rule
 ## Development
 
 ```bash
-# Clone the repository
-git clone https://github.com/rennerdo30/ProxBox.git
-cd ProxBox
+# Frontend
+docker compose exec frontend npm run build
+docker compose exec frontend npm run lint
 
-# Create your local configuration
-cp .env.example .env
-# ...then edit .env and fill in the CHANGE_ME_... placeholders
-
-# Set up development environment
-docker-compose -f docker-compose.dev.yml up -d
+# Backend
+docker compose exec backend pytest
+docker compose exec backend alembic revision --autogenerate -m "description"
 ```
+
+The frontend can also be run directly with `npm install && npm run dev` inside
+`frontend/`, pointed at a running backend via `VITE_API_URL`.
+
+### Theming
+
+Colours live as HSL custom properties in `frontend/src/index.css`; the `.dark` block
+overrides the same token names. Light and dark are both supported — the app follows the
+operating system preference and remembers an explicit choice made with the header
+toggle. Prefer adding a token over hardcoding a colour in a component.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
